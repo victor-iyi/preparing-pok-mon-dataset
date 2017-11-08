@@ -1,3 +1,3 @@
-# <span style="color:brown"> variational-auto-encoder [VAE]
+# Preparing Pokémon dataset
 
-## <span style="color:blue"> by _Victor I. Afolabi_
+## by _Victor I. Afolabi_
