@@ -30,5 +30,3 @@ __pycache__/
 
 ### Datasets
 datasets/
-models/
-tensorboard/
