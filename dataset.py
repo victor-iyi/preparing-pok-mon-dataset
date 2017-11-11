@@ -25,14 +25,21 @@ class Dataset:
         self.data_dir = data_dir
         self.dest_dir = dest_dir
         self.size = size
-        self._background = background if not background else self.COLOR_BLACK
+        self._background = background if background else self.COLOR_WHITE
         # Next batch
         self._num_examples = 0
         self._epochs_completed = 0
         self._index_in_epoch = 0
     
-    def create(self):
-        self._process()
+    def create(self, force=False):
+        """
+        Creates the dataset. into self.images
+        
+        :param force: boolean
+            if file has already been created before, 
+            forcefully create it again.
+        """
+        self._process(force=force)
         self._num_examples = self._X.shape[0]
         
     def save(self, save_file, force=False):
@@ -125,11 +132,11 @@ class Dataset:
     def epochs_completed(self):
         return self._epochs_completed
     
-    def _process(self):
+    def _process(self, force):
         imgs = []
         try:
             # convert rgba to rgb (with black background)
-            self.__rgba2rgb()
+            self.__rgba2rgb(force=force)
             files = [os.path.join(self.dest_dir, d) for d in os.listdir(self.dest_dir)]
             for file in files:
                 img = Image.open(file)
@@ -140,11 +147,14 @@ class Dataset:
             sys.stderr.write('\r{}'.format(e))
         self._X = np.array(imgs)
     
-    def __rgba2rgb(self):
-        if os.path.isdir(self.dest_dir) and len(os.listdir(self.dest_dir)) > 1:
+    def __rgba2rgb(self, force=False):
+        if os.path.isdir(self.dest_dir) and len(os.listdir(self.dest_dir)) > 1 and not force:
             sys.stderr.write('{} already exist.'.format(self.dest_dir))
             sys.stderr.flush()
             return
+        
+        import shutil
+        shutil.rmtree(self.dest_dir, ignore_errors=True)
         os.makedirs(self.dest_dir)
         files = os.listdir(self.data_dir)
         for i, each in enumerate(files):
@@ -157,10 +167,10 @@ class Dataset:
                     background.save(os.path.join(self.dest_dir, each.split('.')[0] + '.jpg'), 'JPEG')
                 else:
                     png.convert('RGB')
-                    png.save(os.path.join(dest, each.split('.')[0] + '.jpg'), 'JPEG')
+                    png.save(os.path.join(self.dest_dir, each.split('.')[0] + '.jpg'), 'JPEG')
             except Exception as e:
                 sys.stderr.write('{} – {}\n'.format(e, png.filename))
                 os.unlink(os.path.join(self.dest_dir, each.split('.')[0] + '.jpg'))
             finally:
                 sys.stdout.write('\r{:,} of {:,}'.format(i+1, len(files)))
-    
+        del files
