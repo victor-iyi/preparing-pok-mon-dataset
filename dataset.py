@@ -10,6 +10,7 @@
 import os
 import sys
 import pickle
+import shutil
 
 import numpy as np
 
@@ -31,7 +32,7 @@ class Dataset:
         self._epochs_completed = 0
         self._index_in_epoch = 0
     
-    def create(self, force=False):
+    def create(self, flatten=True, force=False):
         """
         Creates the dataset. into self.images
         
@@ -39,7 +40,7 @@ class Dataset:
             if file has already been created before, 
             forcefully create it again.
         """
-        self._process(force=force)
+        self._process(flatten=flatten, force=force)
         self._num_examples = self._X.shape[0]
         
     def save(self, save_file, force=False):
@@ -54,8 +55,10 @@ class Dataset:
         if os.path.isfile(save_file) and not force:
             raise FileExistsError('{} already exist. Set `force=True` to override.'.format(save_file))
         dirs = save_file.split('/')
-        if len(dirs) > 1 and not os.path.isdir('/'.join(dirs[:-1])):
-            os.makedirs('/'.join(dirs[:-1]))
+        if len(dirs) > 1:
+            new_dir = '/'.join(dirs[:-1])
+            shutil.rmtree(new_dir, ignore_errors=True)
+            os.makedirs(new_dir)
         with open(save_file, mode='wb') as f:
             pickle.dump(self, f)
 
@@ -122,7 +125,7 @@ class Dataset:
     
     @property
     def channels(self):
-        return self._X.shape[-1] if len(self._X.shape) > 3 else 1
+        return self._channels
     
     @property
     def num_examples(self):
@@ -136,7 +139,7 @@ class Dataset:
     def epochs_completed(self):
         return self._epochs_completed
     
-    def _process(self, force):
+    def _process(self, flatten, force):
         imgs = []
         try:
             # convert rgba to rgb (with black background)
@@ -145,7 +148,10 @@ class Dataset:
             for file in files:
                 img = Image.open(file)
                 img = img.resize(size=(self.size, self.size))
+                self._channels = img.im.bands
                 img = np.array(img, dtype=np.float32)
+                if flatten:
+                    img = img.flatten()
                 imgs.append(img)
         except Exception as e:
             sys.stderr.write('\r{}'.format(e))
@@ -157,7 +163,6 @@ class Dataset:
             sys.stderr.flush()
             return
         
-        import shutil
         shutil.rmtree(self.dest_dir, ignore_errors=True)
         os.makedirs(self.dest_dir)
         files = os.listdir(self.data_dir)
