@@ -10,9 +10,10 @@
 import os
 import sys
 import pickle
-import datetime as dt
 
 import numpy as np
+
+from PIL import Image
 
 
 class Dataset:
@@ -33,6 +34,39 @@ class Dataset:
     def create(self):
         self._process()
         self._num_examples = self._X.shape[0]
+        
+    def save(self, save_file, force=False):
+        """
+        Saves the dataset object
+
+        :param save_file: str
+            path to a pickle file
+        :param force: bool
+            force saving
+        """
+        if os.path.isfile(save_file) and not force:
+            raise FileExistsError('{} already exist. Set `force=True` to override.'.format(save_file))
+        dirs = save_file.split('/')
+        if len(dirs) > 1 and not os.path.isdir('/'.join(dirs[:-1])):
+            os.makedirs('/'.join(dirs[:-1]))
+        with open(save_file, mode='wb') as f:
+            pickle.dump(self, f)
+
+    def load(self, save_file):
+        """
+        Load a saved Dataset object
+
+        :param save_file:
+            path to a pickle file
+        :return: obj:
+            saved instance of Dataset
+        """
+        if not os.path.isfile(save_file):
+            raise FileNotFoundError('{} was not found.'.format(save_file))
+        with open(save_file, 'rb') as f:
+            self = pickle.load(file=f)
+        return self
+
     
     def next_batch(self, batch_size, shuffle=True):
         """
