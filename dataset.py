@@ -121,6 +121,10 @@ class Dataset:
         return self._X
     
     @property
+    def channels(self):
+        return self._X.shape[-1] if len(self._X.shape) > 3 else 1
+    
+    @property
     def num_examples(self):
         return self._num_examples
 
